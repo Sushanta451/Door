@@ -1,74 +1,78 @@
-#include "stm32f446xx.h"
 #include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_gpio.h"
-#include "stm32f4xx_hal_rcc.h"
+
+
+
 void SystemClock_Config(void);
 void Error_Handler(void);
 void GPIO_Init(void);
 
 
+struct stoplight{
+    uint16_t pin;
+    uint32_t duration;
+};
 
-/* Entry point ---------------------------------------------------------------*/
+stoplight seq[]{
+    {GPIO_PIN_0,3000},
+    {GPIO_PIN_1,1000},
+    {GPIO_PIN_4,2000},
+};
+
+int size = sizeof(seq)/sizeof(seq[0]);
+
+
 int main(void)
 {
-
-    if(HAL_Init() != HAL_OK){
+    if (HAL_Init() != HAL_OK)
+    {
         Error_Handler();
     }
+ 
+    SystemClock_Config();
+    GPIO_Init();
 
-     SystemClock_Config();
+    
 
-     GPIO_Init();
-
-    for(;;){
-        
-        GPIO_PinState buttonstate = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
-
-        //pressed - 0 , not pressed is- 1
-        if(buttonstate == GPIO_PIN_RESET){ 
-            HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5, GPIO_PIN_SET); // pressed- high->led is on
-        }
-        else{
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); //not pressed- low ->led is off
+    for (;;)
+    {   
+        for(int i = 0; i < size; i++){
+            HAL_GPIO_WritePin(GPIOA , seq[i].pin, GPIO_PIN_SET);
+            HAL_Delay(seq[i].duration);
+            HAL_GPIO_WritePin(GPIOA , seq[i].pin, GPIO_PIN_RESET);
         }
         
     }
+}
+
+void GPIO_Init(void)
+{
+
+    GPIO_InitTypeDef gpio{};
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+
+    for(int i = 0; i < size; i++){
+    gpio.Pin = seq[i].pin;
+    gpio.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio.Pull = GPIO_NOPULL;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA,&gpio);
+    }
+
+
 
 }
 
-void GPIO_Init(void){
-    GPIO_InitTypeDef gpio {}; //create a empty struct
-     __HAL_RCC_GPIOA_CLK_ENABLE(); //turn on the clock for port A
-
-        gpio.Pin = GPIO_PIN_5; 
-        gpio.Mode = GPIO_MODE_OUTPUT_PP;
-        gpio.Pull = GPIO_NOPULL;
-        gpio.Speed = GPIO_SPEED_FREQ_LOW;
-
-        HAL_GPIO_Init(GPIOA, &gpio);
-   
-     __HAL_RCC_GPIOC_CLK_ENABLE();
-
-        gpio = {};
-        gpio.Pin = GPIO_PIN_13;
-        gpio.Mode = GPIO_MODE_INPUT;
-        gpio.Pull = GPIO_NOPULL;
-        gpio.Speed = GPIO_SPEED_FREQ_LOW;
-
-        HAL_GPIO_Init(GPIOC, &gpio);
-
-}
-
-void SystemClock_Config(void) //comeback to it, not imporant for now.
+void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct{};
     RCC_ClkInitTypeDef RCC_ClkInitStruct{};
 
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-    RCC_OscInitStruct.HSIState       = RCC_HSI_ON;
+    RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI;
+    RCC_OscInitStruct.HSIState            = RCC_HSI_ON;
     RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-    RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_NONE;
+    RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_NONE;
 
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
@@ -88,9 +92,10 @@ void SystemClock_Config(void) //comeback to it, not imporant for now.
     }
 }
 
-void Error_Handler(){
+void Error_Handler(void)
+{
     __disable_irq();
-    for(;;){
-        //whatever should show up when there is a error
+    for (;;)
+    {
     }
 }
