@@ -1,5 +1,8 @@
+#include "Legacy/stm32_hal_legacy.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_gpio.h"
+#include "stm32f4xx_hal_rcc.h"
+#include <cstdint>
 
 
 
@@ -8,19 +11,19 @@ void Error_Handler(void);
 void GPIO_Init(void);
 
 
-struct stoplight{
-    uint16_t pin;
-    uint32_t duration;
+struct store{
+    uint8_t pin;
+    uint32_t delaysss;
 };
 
-stoplight seq[]{
+
+store traffice[]{
     {GPIO_PIN_0,3000},
     {GPIO_PIN_1,1000},
     {GPIO_PIN_4,2000},
 };
 
-int size = sizeof(seq)/sizeof(seq[0]);
-
+int size = sizeof(traffice)/sizeof(traffice[0]);
 
 int main(void)
 {
@@ -36,30 +39,43 @@ int main(void)
 
     for (;;)
     {   
-        for(int i = 0; i < size; i++){
-            HAL_GPIO_WritePin(GPIOA , seq[i].pin, GPIO_PIN_SET);
-            HAL_Delay(seq[i].duration);
-            HAL_GPIO_WritePin(GPIOA , seq[i].pin, GPIO_PIN_RESET);
+
+        GPIO_PinState buttonstate = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+
+
+        if(buttonstate == GPIO_PIN_RESET){
+        for(int i = 0; i < size; i++ ){
+            HAL_GPIO_WritePin(GPIOA, traffice[i].pin, GPIO_PIN_SET);
+            HAL_Delay(traffice[i].delaysss);
+            HAL_GPIO_WritePin(GPIOA, traffice[i].pin,GPIO_PIN_RESET);
         }
+      }
+
         
     }
 }
 
 void GPIO_Init(void)
 {
-
     GPIO_InitTypeDef gpio{};
     __HAL_RCC_GPIOA_CLK_ENABLE();
 
-
     for(int i = 0; i < size; i++){
-    gpio.Pin = seq[i].pin;
-    gpio.Mode = GPIO_MODE_OUTPUT_PP;
-    gpio.Pull = GPIO_NOPULL;
-    gpio.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA,&gpio);
+        gpio.Pin = traffice[i].pin;
+        gpio.Mode = GPIO_MODE_OUTPUT_PP;
+        gpio.Pull= GPIO_NOPULL;
+        gpio.Speed = GPIO_SPEED_FREQ_LOW;
+        HAL_GPIO_Init(GPIOA, &gpio);
     }
 
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+
+    gpio = {};
+    gpio.Pin = GPIO_PIN_13;
+    gpio.Mode = GPIO_MODE_INPUT;
+    gpio.Pull = GPIO_PULLUP;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOC, &gpio );
 
 
 }
