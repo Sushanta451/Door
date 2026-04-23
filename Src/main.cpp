@@ -12,7 +12,7 @@ void GPIO_Init(void);
 
 
 struct store{
-    uint8_t pin;
+    uint16_t pin;
     uint32_t delaysss;
 };
 
